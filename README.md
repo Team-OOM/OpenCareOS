@@ -1,9 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="OpenCareOS Logo" width="350">
-</p>
-
-<p align="center">
-  <b>The Open Source AI Operating Layer for Healthcare</b>
+  <img src="assets/logo.png" alt="OpenCareOS Logo" width="500">
 </p>
 
 > **The Open Source AI Operating Layer for Healthcare**
