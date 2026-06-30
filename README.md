@@ -2,8 +2,6 @@
   <img src="assets/logo.png" alt="OpenCareOS Logo" width="350">
 </p>
 
-<h1 align="center">OpenCareOS</h1>
-
 <p align="center">
   <b>The Open Source AI Operating Layer for Healthcare</b>
 </p>
