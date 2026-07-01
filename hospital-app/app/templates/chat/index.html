@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant - OpenCareOS{% endblock %}
+
+{% block head %}
+<style>
+    .chat-message {
+        animation: fadeInUp 0.3s ease-out;
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .typing-indicator span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #94a3b8;
+        animation: typing 1.4s infinite ease-in-out both;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typing {
+        0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+        40% { transform: scale(1); opacity: 1; }
+    }
+    .thinking-indicator {
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+    /* Scrollbar styling */
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+    .chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    .dark .chat-messages::-webkit-scrollbar-thumb {
+        background: #475569;
+    }
+    /* Markdown styling */
+    .prose {
+        @apply text-gray-800 dark:text-gray-200;
+    }
+    .prose code:not(pre code) {
+        @apply bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono text-red-600 dark:text-red-400;
+    }
+    .prose pre {
+        @apply bg-gray-900 dark:bg-gray-950 rounded-lg p-4 overflow-x-auto;
+    }
+    .prose pre code {
+        @apply text-gray-100 dark:text-gray-100 bg-transparent p-0;
+    }
+    .prose h1, .prose h2, .prose h3 {
+        @apply text-gray-900 dark:text-white font-semibold;
+    }
+    .prose ul, .prose ol {
+        @apply pl-6;
+    }
+    .prose blockquote {
+        @apply border-l-4 border-primary-500 pl-4 italic text-gray-600 dark:text-gray-400;
+    }
+    .prose table {
+        @apply w-full border-collapse;
+    }
+    .prose th, .prose td {
+        @apply border border-gray-200 dark:border-gray-700 px-3 py-2 text-left;
+    }
+    .prose th {
+        @apply bg-gray-100 dark:bg-gray-800 font-semibold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900" x-data="chatApp()" x-init="init()">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <a href="/" class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+                            <i class="fas fa-heartbeat text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900 dark:text-white">OpenCareOS</span>
+                    </a>
+                    <nav class="hidden md:flex items-center gap-6">
+                        <a href="/patient/dashboard" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">Dashboard</a>
+                        <a href="/chat" class="text-primary-600 dark:text-primary-400 font-medium">AI Chat</a>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle theme">
+                        <i class="fas fa-sun dark:hidden"></i>
+                        <i class="fas fa-moon hidden dark:block"></i>
+                    </button>
+                    <button @click="toggleSidebar" class="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Toggle sidebar">
+                        <i class="fas fa-comments"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Chat Area -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar: Conversation History -->
+        <aside :class="['fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 md:relative md:translate-x-0', sidebarOpen ? 'translate-x-0' : '-translate-x-full']" x-show="sidebarOpen || true" x-cloak>
+            <div class="flex flex-col h-full">
+                <!-- Sidebar Header -->
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Conversations</h2>
+                    <button @click="newConversation()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" aria-label="New conversation">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+
+                <!-- Search Conversations -->
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" placeholder="Search conversations..." x-model="searchQuery" @input="filterConversations()" class="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-sm">
+                    </div>
+                </div>
+
+                <!-- Conversation List -->
+                <div class="flex-1 overflow-y-auto p-3 space-y-1">
+                    <template x-for="conv in filteredConversations" :key="conv.id">
+                        <button @click="selectConversation(conv)" :class="['w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors', activeConversationId === conv.id ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700']">
+                            <div class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-comments text-primary-600 dark:text-primary-400"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="conv.title"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="conv.lastMessage"></p>
+                            </div>
+                            <span class="text-xs text-gray-400 whitespace-nowrap" x-text="formatRelativeTime(conv.updatedAt)"></span>
+                        </button>
+                    </template>
+                    <div x-show="filteredConversations.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-comment-slash text-2xl mb-2"></i>
+                        <p class="text-sm">No conversations yet</p>
+                        <button @click="newConversation()" class="mt-2 text-primary-600 dark:text-primary-400 hover:underline text-sm">Start a new chat</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-40 md:hidden" x-cloak></div>
+
+        <!-- Chat Area -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <!-- Chat Header -->
+            <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                        <i class="fas fa-robot text-primary-600 dark:text-primary-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white" x-text="activeConversation?.title || 'AI Assistant'"></h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Powered by OpenCareOS AI • Your health data is private</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button @click="toggleSidebar" class="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Toggle sidebar">
+                        <i class="fas fa-comments"></i>
+                    </button>
+                    <button @click="newConversation()" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="New conversation">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="flex-1 overflow-y-auto chat-messages p-4 space-y-6" x-ref="messagesContainer">
+                <!-- Welcome Message -->
+                <div x-show="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center px-4">
+                    <div class="w-20 h-20 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mb-6">
+                        <i class="fas fa-robot text-3xl text-primary-600 dark:text-primary-400"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">How can I help you today?</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md">I'm your healthcare AI assistant. Ask me about appointments, medications, test results, or general health questions.</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-xl">
+                        <button @click="setQuickMessage('Book an appointment')" class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all text-left">
+                            <i class="fas fa-calendar-plus text-primary-600 dark:text-primary-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Book Appointment</p>
+                        </button>
+                        <button @click="setQuickMessage('What are my current medications?')" class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all text-left">
+                            <i class="fas fa-pills text-green-600 dark:text-green-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">My Medications</p>
+                        </button>
+                        <button @click="setQuickMessage('Show my recent lab results')" class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all text-left">
+                            <i class="fas fa-file-medical text-blue-600 dark:text-blue-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Lab Results</p>
+                        </button>
+                        <button @click="setQuickMessage('Check drug interactions for my medications')" class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all text-left">
+                            <i class="fas fa-prescription text-purple-600 dark:text-purple-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Drug Interactions</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <template x-for="(message, index) in messages" :key="message.id">
+                    <div class="chat-message flex gap-3" :class="message.role === 'user' ? 'flex-row-reverse' : ''">
+                        <!-- Assistant Avatar -->
+                        <div x-show="message.role === 'assistant'" class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0 mt-1">
+                            <i class="fas fa-robot text-primary-600 dark:text-primary-400 text-sm"></i>
+                        </div>
+
+                        <div :class="['flex-1 max-w-[80%]', message.role === 'user' ? 'order-2' : 'order-1']">
+                            <div :class="['rounded-2xl px-4 py-3', message.role === 'user' ? 'bg-primary-600 text-white rounded-br-md' : 'bg-gray-100 dark:bg-gray-800 rounded-bl-md']">
+                                <div x-show="message.role === 'assistant'" class="prose prose-sm max-w-none dark:prose-invert" x-html="renderMarkdown(message.content)"></div>
+                                <p x-show="message.role === 'user'" class="whitespace-pre-wrap" x-text="message.content"></p>
+                            </div>
+                            <div class="flex items-center gap-2 mt-1 px-1">
+                                <span class="text-xs text-gray-400" x-text="formatTime(message.timestamp)"></span>
+                                <button @click="copyMessage(message.content)" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Copy">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- User Avatar -->
+                        <div x-show="message.role === 'user'" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-1">
+                            <i class="fas fa-user text-gray-600 dark:text-gray-400 text-sm"></i>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Typing Indicator -->
+                <div x-show="isTyping" class="chat-message flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0 mt-1">
+                        <i class="fas fa-robot text-primary-600 dark:text-primary-400 text-sm"></i>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 rounded-bl-md">
+                        <div class="typing-indicator flex gap-1">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thinking Indicator -->
+                <div x-show="isThinking" class="chat-message flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0 mt-1">
+                        <i class="fas fa-brain text-primary-600 dark:text-primary-400 text-sm"></i>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 rounded-bl-md">
+                        <div class="thinking-indicator flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Thinking...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool Execution Indicator -->
+                <template x-for="tool in activeTools" :key="tool.id">
+                    <div class="chat-message flex gap-3">
+                        <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0 mt-1">
+                            <i class="fas fa-cog fa-spin text-yellow-600 dark:text-yellow-400 text-sm"></i>
+                        </div>
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl px-4 py-3 rounded-bl-md border border-yellow-200 dark:border-yellow-800">
+                            <div class="flex items-center gap-2 text-yellow-800 dark:text-yellow-200 text-sm">
+                                <i class="fas fa-tools"></i>
+                                <span x-text="'Using ' + tool.name + '...'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- File Upload Preview -->
+            <div x-show="uploadedFiles.length > 0" class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-2">
+                <template x-for="file in uploadedFiles" :key="file.id">
+                    <div class="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <i :class="getFileIcon(file.type) + ' text-gray-500'"></i>
+                        <span class="text-sm text-gray-700 dark:text-gray-300 truncate max-w-xs" x-text="file.name"></span>
+                        <button @click="removeUploadedFile(file.id)" class="text-gray-400 hover:text-red-500" aria-label="Remove file">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Input Area -->
+            <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+                <form @submit.prevent="sendMessage" class="flex gap-2">
+                    <button type="button" @click="triggerFileInput" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Attach file" :class="{ 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400': uploadedFiles.length > 0 }">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="file" x-ref="fileInput" @change="handleFileUpload" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.docx,.txt">
+                    <div class="flex-1 relative">
+                        <textarea
+                            x-ref="messageInput"
+                            x-model="messageInput"
+                            @keydown.enter.exact.prevent="sendMessage"
+                            @keydown.enter="handleEnter"
+                            placeholder="Message AI Assistant..."
+                            class="w-full px-4 py-3 pr-12 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none min-h-[48px] max-h-48"
+                            rows="1"
+                        ></textarea>
+                        <button type="submit" :disabled="!messageInput.trim() && uploadedFiles.length === 0 || isSending" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <p class="text-xs text-gray-400 text-center mt-2">Press Enter to send, Shift+Enter for new line • Files: PDF, Images, CSV, DOCX (max 50MB each)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function chatApp() {
+        return {
+            // State
+            sidebarOpen: true,
+            activeConversationId: null,
+            activeConversation: null,
+            conversations: [],
+            filteredConversations: [],
+            messages: [],
+            messageInput: '',
+            uploadedFiles: [],
+            isTyping: false,
+            isThinking: false,
+            isSending: false,
+            searchQuery: '',
+            activeTools: [],
+
+            // Init
+            async init() {
+                await this.loadConversations();
+                this.$nextTick(() => this.scrollToBottom());
+            },
+
+            // Conversation Management
+            async loadConversations() {
+                try {
+                    const response = await fetch('/api/ai/conversations', { credentials: 'include' });
+                    const data = await response.json();
+                    this.conversations = data.data || [];
+                    this.filteredConversations = [...this.conversations];
+                    if (this.conversations.length > 0) {
+                        this.selectConversation(this.conversations[0]);
+                    }
+                } catch (e) {
+                    console.error('Failed to load conversations:', e);
+                }
+            },
+
+            filterConversations() {
+                if (!this.searchQuery) {
+                    this.filteredConversations = [...this.conversations];
+                } else {
+                    const q = this.searchQuery.toLowerCase();
+                    this.filteredConversations = this.conversations.filter(c =>
+                        c.title.toLowerCase().includes(q) ||
+                        (c.lastMessage && c.lastMessage.toLowerCase().includes(q))
+                    );
+                }
+            },
+
+            selectConversation(conv) {
+                this.activeConversationId = conv.id;
+                this.activeConversation = conv;
+                this.loadMessages(conv.id);
+                this.sidebarOpen = false; // Close on mobile
+            },
+
+            async loadMessages(conversationId) {
+                try {
+                    const response = await fetch(`/api/ai/conversations/${conversationId}/messages`, { credentials: 'include' });
+                    const data = await response.json();
+                    this.messages = data.data || [];
+                    this.$nextTick(() => this.scrollToBottom());
+                } catch (e) {
+                    console.error('Failed to load messages:', e);
+                }
+            },
+
+            newConversation() {
+                this.activeConversationId = null;
+                this.activeConversation = { title: 'New Conversation' };
+                this.messages = [];
+                this.messageInput = '';
+                this.uploadedFiles = [];
+                this.sidebarOpen = false;
+            },
+
+            // Message Handling
+            async sendMessage() {
+                if ((!this.messageInput.trim() && this.uploadedFiles.length === 0) || this.isSending) return;
+
+                const content = this.messageInput.trim();
+                const files = [...this.uploadedFiles];
+
+                // Add user message
+                const userMessage = {
+                    id: 'msg-' + Date.now(),
+                    role: 'user',
+                    content: content,
+                    timestamp: new Date().toISOString(),
+                    files: files.map(f => ({ name: f.name, type: f.type })),
+                };
+                this.messages.push(userMessage);
+                this.messageInput = '';
+                this.uploadedFiles = [];
+                this.isSending = true;
+                this.scrollToBottom();
+
+                // Simulate AI response (replace with actual API call)
+                await this.simulateAIResponse(content);
+
+                this.isSending = false;
+            },
+
+            async simulateAIResponse(userMessage) {
+                this.isThinking = true;
+                this.scrollToBottom();
+
+                // Simulate thinking delay
+                await new Promise(r => setTimeout(r, 1000 + Math.random() * 1500));
+                this.isThinking = false;
+
+                // Check for tool calls based on keywords
+                const lowerMsg = userMessage.toLowerCase();
+                let response = '';
+                let toolCalls = [];
+
+                if (lowerMsg.includes('appointment') || lowerMsg.includes('book')) {
+                    this.activeTools.push({ id: 'tool-1', name: 'check_availability' });
+                    await new Promise(r => setTimeout(r, 800));
+                    this.activeTools = [];
+                    toolCalls.push({ name: 'check_availability', arguments: { doctor_id: 'current', date: 'next_week' } });
+                    response = "I'll check available appointment slots for you. Let me query the scheduling system.";
+                } else if (lowerMsg.includes('medication') || lowerMsg.includes('prescription')) {
+                    this.activeTools.push({ id: 'tool-2', name: 'get_patient_medications' });
+                    await new Promise(r => setTimeout(r, 800));
+                    this.activeTools = [];
+                    toolCalls.push({ name: 'get_patient_medications', arguments: { patient_id: 'current' } });
+                    response = "Here are your current medications:\n\n1. **Atorvastatin** 20mg - Once daily\n2. **Metoprolol** 50mg - Twice daily\n3. **Lisinopril** 10mg - Once daily\n\nWould you like me to check for any drug interactions?";
+                } else if (lowerMsg.includes('report') || lowerMsg.includes('lab') || lowerMsg.includes('result')) {
+                    this.activeTools.push({ id: 'tool-3', name: 'get_patient_reports' });
+                    await new Promise(r => setTimeout(r, 800));
+                    this.activeTools = [];
+                    toolCalls.push({ name: 'get_patient_reports', arguments: { patient_id: 'current' } });
+                    response = "Here are your recent lab reports:\n\n- **Lipid Panel** (Jan 10, 2024) - Total Cholesterol: 210 mg/dL\n- **HbA1c** (Jan 8, 2024) - 7.2%\n- **Basic Metabolic Panel** (Jan 5, 2024) - All within normal limits\n\nWould you like me to explain any of these results?";
+                } else if (lowerMsg.includes('interaction') || lowerMsg.includes('drug')) {
+                    this.activeTools.push({ id: 'tool-4', name: 'check_drug_interactions' });
+                    await new Promise(r => setTimeout(r, 800));
+                    this.activeTools = [];
+                    toolCalls.push({ name: 'check_drug_interactions', arguments: { medications: ['Atorvastatin', 'Metoprolol', 'Lisinopril'] } });
+                    response = "I've checked your medications for interactions:\n\n✅ **No significant interactions found** between Atorvastatin, Metoprolol, and Lisinopril.\n\nAll three medications are commonly prescribed together and have a good safety profile when monitored appropriately.";
+                } else {
+                    // Generic response
+                    await new Promise(r => setTimeout(r, 500));
+                    this.isTyping = true;
+                    await new Promise(r => setTimeout(r, 800));
+                    this.isTyping = false;
+
+                    response = "I'm here to help with your healthcare needs. You can ask me about:\n\n- 📅 **Appointments** - Book, reschedule, or check upcoming visits\n- 💊 **Medications** - View current prescriptions, dosages, schedules\n- 📊 **Lab Results** - Access recent test results and reports\n- ⚠️ **Drug Interactions** - Check for potential medication conflicts\n- 🏥 **General Health** - Answer questions about conditions, symptoms, or wellness\n\nWhat would you like help with today?";
+                }
+
+                // Add assistant message
+                const assistantMessage = {
+                    id: 'msg-' + Date.now(),
+                    role: 'assistant',
+                    content: response,
+                    timestamp: new Date().toISOString(),
+                    toolCalls: toolCalls,
+                };
+                this.messages.push(assistantMessage);
+                this.scrollToBottom();
+            },
+
+            handleEnter(e) {
+                if (!e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            },
+
+            setQuickMessage(msg) {
+                this.messageInput = msg;
+                this.$refs.messageInput.focus();
+            },
+
+            // File Handling
+            triggerFileInput() {
+                this.$refs.fileInput.click();
+            },
+
+            handleFileUpload(e) {
+                const files = Array.from(e.target.files);
+                for (const file of files) {
+                    if (file.size > 50 * 1024 * 1024) {
+                        OpenCareOS.showToast(`File ${file.name} exceeds 50MB limit`, 'error');
+                        continue;
+                    }
+                    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'text/csv', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+                    if (!allowedTypes.includes(file.type)) {
+                        OpenCareOS.showToast(`File type not allowed: ${file.name}`, 'error');
+                        continue;
+                    }
+                    this.uploadedFiles.push({
+                        id: 'file-' + Date.now() + '-' + Math.random(),
+                        file: file,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                    });
+                }
+                e.target.value = '';
+            },
+
+            removeUploadedFile(id) {
+                this.uploadedFiles = this.uploadedFiles.filter(f => f.id !== id);
+            },
+
+            getFileIcon(type) {
+                if (type.startsWith('image/')) return 'fas fa-image';
+                if (type === 'application/pdf') return 'fas fa-file-pdf';
+                if (type === 'text/csv') return 'fas fa-file-csv';
+                if (type.includes('wordprocessingml')) return 'fas fa-file-word';
+                return 'fas fa-file';
+            },
+
+            // Utilities
+            formatTime(isoString) {
+                const date = new Date(isoString);
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            },
+
+            formatRelativeTime(isoString) {
+                return OpenCareOS.formatRelativeTime(isoString);
+            },
+
+            renderMarkdown(text) {
+                return marked.parse(text);
+            },
+
+            copyMessage(content) {
+                navigator.clipboard.writeText(content);
+                OpenCareOS.showToast('Copied to clipboard', 'success', 2000);
+            },
+
+            scrollToBottom() {
+                this.$nextTick(() => {
+                    const container = this.$refs.messagesContainer;
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                });
+            },
+        }
+    }
+</script>
+{% endblock %}

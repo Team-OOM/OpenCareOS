@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard - OpenCareOS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900" x-data="doctorDashboard()">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <a href="/" class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+                            <i class="fas fa-heartbeat text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900 dark:text-white">OpenCareOS</span>
+                    </a>
+                    <nav class="hidden md:flex items-center gap-6">
+                        <a href="/doctor/dashboard" class="text-primary-600 dark:text-primary-400 font-medium">Dashboard</a>
+                        <a href="/doctor/patients" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">Patients</a>
+                        <a href="/doctor/schedule" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">Schedule</a>
+                        <a href="/chat" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">AI Assistant</a>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle theme">
+                        <i class="fas fa-sun dark:hidden"></i>
+                        <i class="fas fa-moon hidden dark:block"></i>
+                    </button>
+                    <div class="hidden sm:flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                            <span class="text-sm font-medium text-green-700 dark:text-green-300" x-text="userInitials"></span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="userName"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Dr. Cardiology</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Welcome & Date -->
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Good morning, <span x-text="userName.split(' ')[1]"></span></h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-1" x-text="todayDate"></p>
+            </div>
+            <div class="flex gap-3">
+                <button class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium">
+                    <i class="fas fa-plus mr-2"></i>New Consultation
+                </button>
+                <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+                    View Schedule
+                </button>
+            </div>
+        </div>
+
+        <!-- Today's Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <i class="fas fa-user-md text-blue-600 dark:text-blue-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="stats.totalPatients"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Today's Patients</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                        <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="stats.completed"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                        <i class="fas fa-clock text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="stats.inProgress"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">In Progress</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <i class="fas fa-hourglass-half text-gray-600 dark:text-gray-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="stats.pending"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                        <i class="fas fa-user-slash text-red-600 dark:text-red-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="stats.noShow"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">No Shows</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Today's Schedule -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-calendar-day text-primary-600"></i>
+                            Today's Schedule
+                        </h2>
+                        <select class="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="today" selected>Today</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="week">This Week</option>
+                        </select>
+                    </div>
+                    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                        <template x-for="appointment in todayAppointments" :key="appointment.id">
+                            <div class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" @click="openConsultation(appointment)">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+                                            <span class="text-lg font-bold text-primary-700 dark:text-primary-300" x-text="formatTime(appointment.scheduledAt)"></span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white" x-text="appointment.patientName"></p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400" x-text="appointment.patientDetails"></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="px-3 py-1 text-xs font-medium rounded-full" :class="getStatusClass(appointment.status)" x-text="formatStatus(appointment.status)"></span>
+                                        <i class="fas fa-chevron-right text-gray-400 sm:hidden"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                    <span class="flex items-center gap-1" x-show="appointment.chiefComplaint">
+                                        <i class="fas fa-stethoscope"></i>
+                                        <span x-text="appointment.chiefComplaint"></span>
+                                    </span>
+                                    <span class="flex items-center gap-1" x-show="appointment.isTelemedicine">
+                                        <i class="fas fa-video text-primary-600"></i>
+                                        <span>Telemedicine</span>
+                                    </span>
+                                    <span class="flex items-center gap-1" x-show="appointment.duration">
+                                        <i class="fas fa-clock"></i>
+                                        <span x-text="appointment.duration + ' min'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="p-5 text-center text-gray-500 dark:text-gray-400" x-show="todayAppointments.length === 0">
+                        <i class="fas fa-calendar-check text-2xl mb-2"></i>
+                        <p>No appointments scheduled for today</p>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-tools text-accent-600"></i>
+                            Quick Actions
+                        </h2>
+                    </div>
+                    <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <button class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                <i class="fas fa-notes-medical text-primary-600 dark:text-primary-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">New Note</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                <i class="fas fa-prescription text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Prescribe</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <i class="fas fa-file-medical text-blue-600 dark:text-blue-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Order Labs</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                <i class="fas fa-robot text-purple-600 dark:text-purple-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">AI Assistant</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Patient Search & Recent -->
+            <div class="space-y-6">
+                <!-- Patient Search -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-search text-primary-600"></i>
+                            Find Patient
+                        </h2>
+                    </div>
+                    <div class="p-5">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input
+                                type="text"
+                                placeholder="Search by name, MRN, or phone..."
+                                class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                                x-model="searchQuery"
+                                @input.debounce.300ms="searchPatients()"
+                            >
+                        </div>
+                        <div class="mt-3 space-y-2 max-h-60 overflow-y-auto" x-show="searchResults.length > 0">
+                            <template x-for="patient in searchResults" :key="patient.id">
+                                <button @click="selectPatient(patient)" class="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                        <span class="text-xs font-medium text-primary-700 dark:text-primary-300" x-text="getInitials(patient.name)"></span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="patient.name"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="patient.mrn + ' • ' + patient.age + 'y'"></p>
+                                    </div>
+                                </button>
+                            </template>
+                        </div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4" x-show="searchQuery && searchResults.length === 0">No patients found</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4" x-show="!searchQuery">Start typing to search patients</p>
+                    </div>
+                </div>
+
+                <!-- Recent Consultations -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-history text-gray-600"></i>
+                            Recent Consultations
+                        </h2>
+                        <a href="#" class="text-sm text-primary-600 hover:underline">View all</a>
+                    </div>
+                    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                        <template x-for="consult in recentConsultations.slice(0, 5)" :key="consult.id">
+                            <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium text-gray-900 dark:text-white" x-text="consult.patientName"></p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400" x-text="consult.date"></p>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">Completed</span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                        <i class="fas fa-brain text-purple-600"></i>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">AI Insights</h2>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <div class="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+                            <p class="text-sm text-purple-800 dark:text-purple-200"><strong>Patient Summary:</strong> 3 patients have upcoming follow-ups due this week.</p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                            <p class="text-sm text-blue-800 dark:text-blue-200"><strong>Drug Interaction Alert:</strong> 2 patients on Warfarin + Aspirin combination - Aspirin combination.</p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
+                            <p class="text-sm text-green-800 dark:text-green-200"><strong>Care Gap:</strong> 5 diabetic patients overdue for HbA1c check.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    function doctorDashboard() {
+        return {
+            userName: 'Dr. Sarah Johnson',
+            userInitials: 'SJ',
+            todayDate: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+            stats: {
+                totalPatients: 12,
+                completed: 5,
+                inProgress: 2,
+                pending: 4,
+                noShow: 1,
+            },
+            todayAppointments: [
+                { id: '1', patientName: 'John Doe', patientDetails: 'M, 52y • MRN: 123456', scheduledAt: '2024-01-15T09:00:00Z', status: 'completed', chiefComplaint: 'Chest pain follow-up', isTelemedicine: false, duration: 30 },
+                { id: '2', patientName: 'Jane Smith', patientDetails: 'F, 45y • MRN: 789012', scheduledAt: '2024-01-15T10:30:00Z', status: 'in_progress', chiefComplaint: 'Diabetes management', isTelemedicine: false, duration: 30 },
+                { id: '3', patientName: 'Robert Brown', patientDetails: 'M, 67y • MRN: 345678', scheduledAt: '2024-01-15T11:00:00Z', status: 'pending', chiefComplaint: 'Hypertension review', isTelemedicine: true, duration: 20 },
+                { id: '4', patientName: 'Maria Garcia', patientDetails: 'F, 38y • MRN: 901234', scheduledAt: '2024-01-15T14:00:00Z', status: 'pending', chiefComplaint: 'Annual checkup', isTelemedicine: false, duration: 45 },
+                { id: '5', patientName: 'James Wilson', patientDetails: 'M, 55y • MRN: 567890', scheduledAt: '2024-01-15T15:30:00Z', status: 'pending', chiefComplaint: 'Medication refill', isTelemedicine: false, duration: 15 },
+            ],
+            recentConsultations: [
+                { id: '1', patientName: 'John Doe', date: 'Jan 14, 2024' },
+                { id: '2', patientName: 'Jane Smith', date: 'Jan 12, 2024' },
+                { id: '3', patientName: 'Robert Brown', date: 'Jan 10, 2024' },
+            ],
+            searchQuery: '',
+            searchResults: [],
+
+            formatTime(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            },
+
+            getStatusClass(status) {
+                const classes = {
+                    scheduled: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+                    confirmed: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+                    checked_in: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200',
+                    in_progress: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200',
+                    completed: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+                    cancelled: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
+                    no_show: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
+                };
+                return classes[status] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+            },
+
+            formatStatus(status) {
+                return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            },
+
+            getInitials(name) {
+                return name.split(' ').map(n => n[0]).join('').toUpperCase();
+            },
+
+            async searchPatients() {
+                if (this.searchQuery.length < 2) {
+                    this.searchResults = [];
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/patients/search?q=${encodeURIComponent(this.searchQuery)}&size=10`, {
+                        credentials: 'include',
+                    });
+                    const data = await response.json();
+                    this.searchResults = data.data?.patients || [];
+                } catch (e) {
+                    console.error('Search failed:', e);
+                }
+            },
+
+            selectPatient(patient) {
+                this.searchQuery = patient.name;
+                this.searchResults = [];
+                OpenCareOS.showToast(`Selected: ${patient.name}`, 'success');
+                // Navigate to patient detail or open consultation
+            },
+
+            openConsultation(appointment) {
+                OpenCareOS.showToast(`Opening consultation for ${appointment.patientName}`, 'info');
+                // Navigate to consultation page
+            },
+        }
+    }
+</script>
+{% endblock %}

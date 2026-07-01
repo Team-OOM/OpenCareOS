@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - OpenCareOS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900" x-data="patientDashboard()">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <a href="/" class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+                            <i class="fas fa-heartbeat text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900 dark:text-white">OpenCareOS</span>
+                    </a>
+                    <nav class="hidden md:flex items-center gap-6">
+                        <a href="/patient/dashboard" class="text-primary-600 dark:text-primary-400 font-medium">Dashboard</a>
+                        <a href="/chat" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">AI Chat</a>
+                        <a href="/patient/appointments" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">Appointments</a>
+                        <a href="/patient/reports" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">Reports</a>
+                        <a href="/patient/medications" class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">Medications</a>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle theme">
+                        <i class="fas fa-sun dark:hidden"></i>
+                        <i class="fas fa-moon hidden dark:block"></i>
+                    </button>
+                    <div class="hidden sm:flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                            <span class="text-sm font-medium text-primary-700 dark:text-primary-300" x-text="userInitials"></span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="userName"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Patient</p>
+                        </div>
+                    </div>
+                    <a href="/api/auth/logout" class="sm:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome back, <span x-text="userName.split(' ')[0]"></span>!</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Here's what's happening with your health today.</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <i class="fas fa-calendar-check text-blue-600 dark:text-blue-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="upcomingAppointments"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Upcoming Appointments</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                        <i class="fas fa-file-medical text-green-600 dark:text-green-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="recentReports"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Recent Reports</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                        <i class="fas fa-pills text-purple-600 dark:text-purple-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="activeMedications"></p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Active Medications</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                        <i class="fas fa-comments text-orange-600 dark:text-orange-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">24/7</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">AI Assistant Available</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Upcoming Appointment & Quick Actions -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Upcoming Appointment -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm" x-show="upcomingAppointment">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-calendar-alt text-primary-600"></i>
+                            Upcoming Appointment
+                        </h2>
+                        <a href="/patient/appointments" class="text-sm text-primary-600 hover:underline">View all</a>
+                    </div>
+                    <div class="p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <p class="text-lg font-medium text-gray-900 dark:text-white" x-text="upcomingAppointment.doctorName"></p>
+                                <p class="text-gray-500 dark:text-gray-400" x-text="upcomingAppointment.specialty"></p>
+                                <div class="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <span class="flex items-center gap-1">
+                                        <i class="fas fa-clock"></i>
+                                        <span x-text="formatDateTime(upcomingAppointment.scheduledAt)"></span>
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span x-text="upcomingAppointment.location"></span>
+                                    </span>
+                                    <span class="flex items-center gap-1" x-show="upcomingAppointment.isTelemedicine">
+                                        <i class="fas fa-video"></i>
+                                        <span>Telemedicine</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium">
+                                    Join Visit
+                                </button>
+                                <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+                                    Reschedule
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No upcoming appointment -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-center py-10" x-show="!upcomingAppointment">
+                    <i class="fas fa-calendar-plus text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No upcoming appointments</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">Schedule your next visit with your doctor</p>
+                    <button class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        Book Appointment
+                    </button>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-bolt text-accent-600"></i>
+                            Quick Actions
+                        </h2>
+                    </div>
+                    <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <a href="/chat" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                <i class="fas fa-comments text-primary-600 dark:text-primary-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">AI Chat</span>
+                        </a>
+                        <a href="/patient/appointments" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <i class="fas fa-calendar-plus text-blue-600 dark:text-blue-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Book Appointment</span>
+                        </a>
+                        <a href="/patient/reports" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                <i class="fas fa-file-medical text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">View Reports</span>
+                        </a>
+                        <a href="/patient/medications" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                <i class="fas fa-pills text-purple-600 dark:text-purple-400 text-xl"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Medications</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Health Summary -->
+            <div class="space-y-6">
+                <!-- Recent Reports -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-file-medical text-green-600"></i>
+                            Recent Reports
+                        </h2>
+                        <a href="/patient/reports" class="text-sm text-primary-600 hover:underline">View all</a>
+                    </div>
+                    <div class="p-5 space-y-3" x-show="recentReports.length > 0">
+                        <template x-for="report in recentReports.slice(0, 5)" :key="report.id">
+                            <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-green-600 dark:text-green-400"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="report.title"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="formatDate(report.createdAt)"></p>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="p-5 text-center text-gray-500 dark:text-gray-400" x-show="recentReports.length === 0">
+                        <i class="fas fa-file-medical text-2xl mb-2"></i>
+                        <p>No recent reports</p>
+                    </div>
+                </div>
+
+                <!-- Current Medications -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-pills text-purple-600"></i>
+                            Current Medications
+                        </h2>
+                        <a href="/patient/medications" class="text-sm text-primary-600 hover:underline">View all</a>
+                    </div>
+                    <div class="p-5 space-y-3" x-show="medications.length > 0">
+                        <template x-for="med in medications.slice(0, 5)" :key="med.id">
+                            <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                    <i class="fas fa-pill text-purple-600 dark:text-purple-400"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="med.name"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="med.dosage + ' • ' + med.frequency"></p>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">Active</span>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="p-5 text-center text-gray-500 dark:text-gray-400" x-show="medications.length === 0">
+                        <i class="fas fa-pills text-2xl mb-2"></i>
+                        <p>No active medications</p>
+                    </div>
+                </div>
+
+                <!-- Allergies & Conditions -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-shield-alt text-red-600"></i>
+                            Allergies & Conditions
+                        </h2>
+                    </div>
+                    <div class="p-5">
+                        <div class="mb-4" x-show="allergies.length > 0">
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Allergies</h4>
+                            <div class="flex flex-wrap gap-2" x-for="allergy in allergies" :key="allergy">
+                                <span class="px-3 py-1 text-sm rounded-full bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800" x-text="allergy"></span>
+                            </div>
+                        </div>
+                        <div x-show="conditions.length > 0">
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Chronic Conditions</h4>
+                            <div class="flex flex-wrap gap-2" x-for="condition in conditions" :key="condition">
+                                <span class="px-3 py-1 text-sm rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800" x-text="condition"></span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4" x-show="allergies.length === 0 && conditions.length === 0">No known allergies or chronic conditions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    function patientDashboard() {
+        return {
+            userName: 'John Doe',
+            userInitials: 'JD',
+            upcomingAppointment: {
+                doctorName: 'Dr. Sarah Johnson',
+                specialty: 'Cardiology',
+                scheduledAt: '2024-01-15T10:30:00Z',
+                location: 'Cardiology Clinic, Room 304',
+                isTelemedicine: false,
+            },
+            recentReports: [
+                { id: '1', title: 'Lipid Panel Results', createdAt: '2024-01-10T14:20:00Z' },
+                { id: '2', title: 'ECG Report', createdAt: '2024-01-08T09:15:00Z' },
+                { id: '3', title: 'Chest X-Ray', createdAt: '2024-01-05T11:30:00Z' },
+            ],
+            medications: [
+                { id: '1', name: 'Atorvastatin', dosage: '20 mg', frequency: 'Once daily' },
+                { id: '2', name: 'Metoprolol', dosage: '50 mg', frequency: 'Twice daily' },
+            ],
+            allergies: ['Penicillin', 'Latex'],
+            conditions: ['Hypertension', 'Type 2 Diabetes'],
+            upcomingAppointments: 2,
+            recentReports: 3,
+            activeMedications: 2,
+
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            },
+            formatDateTime(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            },
+        }
+    }
+</script>
+{% endblock %}

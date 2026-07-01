@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ title }} - OpenCareOS">
+    <title>{% block title %}{{ title }}{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        secondary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        accent: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Highlight.js for code blocks -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    {% block head %}{% endblock %}
+</head>
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    {% block content %}{% endblock %}
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2" aria-live="polite"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog"></div>
+
+    {% block scripts %}
+    <script>
+        // Global utilities
+        window.OpenCareOS = {
+            showToast: function(message, type = 'info', duration = 5000) {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const icons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-times-circle',
+                    warning: 'fa-exclamation-triangle',
+                    info: 'fa-info-circle',
+                };
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    warning: 'bg-yellow-500',
+                    info: 'bg-blue-500',
+                };
+                toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg ${colors[type]} text-white transform transition-all duration-300 translate-x-full`;
+                toast.innerHTML = `
+                    <i class="fas ${icons[type]}"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(toast);
+                requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            },
+
+            showModal: function(html, options = {}) {
+                const container = document.getElementById('modal-container');
+                container.innerHTML = `
+                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden">
+                            ${html}
+                        </div>
+                    </div>
+                `;
+                container.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+
+                // Close on backdrop click
+                container.querySelector('.fixed.inset-0').addEventListener('click', (e) => {
+                    if (e.target === e.currentTarget) {
+                        this.closeModal();
+                    }
+                });
+
+                // Close on Escape key
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeModal();
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
+            },
+
+            closeModal: function() {
+                const container = document.getElementById('modal-container');
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                document.body.style.overflow = '';
+            },
+
+            formatDate: function(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                });
+            },
+
+            formatDateTime: function(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            },
+
+            formatRelativeTime: function(dateString) {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                if (diffDays < 7) return `${diffDays}d ago`;
+                return this.formatDate(dateString);
+            },
+
+            api: async function(endpoint, options = {}) {
+                const response = await fetch(endpoint, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers,
+                    },
+                    credentials: 'include',
+                    ...options,
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ message: 'Request failed' }));
+                    throw new Error(error.message || `HTTP ${response.status}`);
+                }
+
+                return response.json();
+            },
+
+            debounce: function(fn, delay) {
+                let timeoutId;
+                return (...args) => {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => fn(...args), delay);
+                };
+            },
+        };
+
+        // Initialize theme
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        window.toggleTheme = toggleTheme;
+    </script>
+    {% endblock %}
+</body>
+</html>

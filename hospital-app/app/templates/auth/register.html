@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Register - OpenCareOS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 px-4 py-12">
+    <div class="w-full max-w-md">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <a href="/" class="inline-flex items-center gap-2">
+                <div class="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center">
+                    <i class="fas fa-heartbeat text-white text-2xl"></i>
+                </div>
+                <span class="text-2xl font-bold text-gray-900 dark:text-white">OpenCareOS</span>
+            </a>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">Create your account</p>
+        </div>
+
+        <!-- Register Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create an account</h1>
+            <p class="text-gray-500 dark:text-gray-400 mb-8">Join OpenCareOS today</p>
+
+            <form id="register-form" class="space-y-5" hx-post="/api/auth/register" hx-target="#register-form" hx-swap="outerHTML">
+                <div>
+                    <label for="full_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Full Name
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="text"
+                            id="full_name"
+                            name="full_name"
+                            required
+                            autocomplete="name"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                            placeholder="John Doe"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Username
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-at absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            required
+                            autocomplete="username"
+                            minlength="3"
+                            maxlength="50"
+                            pattern="[a-zA-Z0-9_]+"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-70000 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                            placeholder="johndoe"
+                        >
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">3-50 characters, letters, numbers, and underscores only</p>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Email Address
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            autocomplete="email"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                            placeholder="you@example.com"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Phone Number (optional)
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            autocomplete="tel"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                            placeholder="+1 (555) 123-4567"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            required
+                            autocomplete="new-password"
+                            minlength="8"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                            placeholder="••••••••"
+                        >
+                        <button
+                            type="button"
+                            onclick="togglePasswordVisibility('password')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            aria-label="Toggle password visibility"
+                        >
+                            <i class="fas fa-eye" id="password-toggle-icon"></i>
+                        </button>
+                    </div>
+                    <div id="password-strength" class="mt-2 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-gray-300 dark:bg-gray-600 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">At least 8 characters</p>
+                </div>
+
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Confirm Password
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="password"
+                            id="confirm_password"
+                            name="confirm_password"
+                            required
+                            autocomplete="new-password"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Register as</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative cursor-pointer">
+                            <input
+                                type="radio"
+                                name="role"
+                                value="patient"
+                                checked
+                                class="sr-only peer"
+                            >
+                            <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/20 transition-all">
+                                <i class="fas fa-user-injured text-2xl text-gray-400 peer-checked:text-primary-600 dark:peer-checked:text-primary-400 mb-2"></i>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Patient</p>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input
+                                type="radio"
+                                name="role"
+                                value="doctor"
+                                class="sr-only peer"
+                            >
+                            <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-center peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/20 transition-all">
+                                <i class="fas fa-user-md text-2xl text-gray-400 peer-checked:text-primary-600 dark:peer-checked:text-primary-400 mb-2"></i>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Doctor</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-2">
+                    <input
+                        type="checkbox"
+                        id="terms"
+                        name="terms"
+                        required
+                        class="w-4 h-4 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                    >
+                    <label for="terms" class="text-sm text-gray-600 dark:text-gray-400">
+                        I agree to the
+                        <a href="#" class="text-primary-600 dark:text-primary-400 hover:underline">Terms of Service</a>
+                        and
+                        <a href="#" class="text-primary-600 dark:text-primary-400 hover:underline">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <button
+                    type="submit"
+                    class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <span class="flex items-center justify-center gap-2">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Create Account</span>
+                    </span>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-gray-500 dark:text-gray-400">
+                    Already have an account?
+                    <a href="/login" class="text-primary-600 dark:text-primary-400 font-medium hover:underline ml-1">Sign in</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
+            <p>&copy; 2024 OpenCareOS. Licensed under Apache 2.0.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePasswordVisibility(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(inputId + '-toggle-icon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    // Password strength meter
+    const passwordInput = document.getElementById('password');
+    const strengthBar = document.querySelector('#password-strength div');
+
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
+
+        if (password.length >= 8) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[a-z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 12.5;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 12.5;
+
+        strengthBar.style.width = strength + '%';
+
+        if (strength < 50) {
+            strengthBar.className = 'h-full bg-red-500 transition-all duration-300';
+        } else if (strength < 75) {
+            strengthBar.className = 'h-full bg-yellow-500 transition-all duration-300';
+        } else {
+            strengthBar.className = 'h-full bg-green-500 transition-all duration-300';
+        }
+    });
+</script>
+{% endblock %}
